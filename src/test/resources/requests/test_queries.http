@@ -1,0 +1,8 @@
+###
+POST http://localhost:8080/query/execute?query=SELECT%20*%20FROM%20passenger%20LIMIT%205
+
+###
+POST http://localhost:8080/query/execute?query=SELECT%20name%2C%20age%20FROM%20passenger%20WHERE%20pclass%20%3D%201%20AND%20survived%20%3D%20true
+
+###
+POST http://localhost:8080/query/execute?query=SELECT%20sex%2C%20COUNT(*)%20as%20count%20FROM%20passenger%20GROUP%20BY%20sex
