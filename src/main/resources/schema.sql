@@ -1,4 +1,4 @@
-CREATE TABLE passenger (
+CREATE TABLE IF NOT EXISTS passenger (
     id          INT PRIMARY KEY,
     survived    BOOLEAN,
     pclass      TINYINT,
@@ -12,3 +12,8 @@ CREATE TABLE passenger (
     cabin       VARCHAR(20),
     embarked    CHAR(1)
 );
+
+CREATE TABLE IF NOT EXISTS query (
+    id          INT PRIMARY KEY AUTO_INCREMENT,
+    queryText   TEXT,
+)
