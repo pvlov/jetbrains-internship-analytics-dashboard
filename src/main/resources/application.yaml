@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: "analytics-dashboard"
+  sql:
+    init:
+      mode: always
+  r2dbc:
+    url: r2dbc:h2:mem:///testdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+
+app:
+  caching:
+    ttl: 120s
+    maxSize: 1000

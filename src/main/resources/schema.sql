@@ -15,5 +15,5 @@ CREATE TABLE IF NOT EXISTS passenger (
 
 CREATE TABLE IF NOT EXISTS query (
     id          INT PRIMARY KEY AUTO_INCREMENT,
-    queryText   TEXT,
+    text        TEXT,
 )
