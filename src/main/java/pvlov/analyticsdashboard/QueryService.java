@@ -39,19 +39,15 @@ public class QueryService {
         return this.queryRepository.findAll();
     }
 
-    public Flux<Map<String, Object>> executeQuery(final long id) {
-        return this.queryRepository.findById(id)
-                .flatMapMany(query ->
-                        databaseClient.sql(query::text)
-                                .fetch()
-                                .all()
-                );
-    }
-
-    public Mono<QueryResult> pollQueryResult(final long queryId) {
+    public Mono<QueryResult> pollQuery(final long queryId) {
         return queryRepository.findById(queryId)
                 .flatMap(query -> {
                     final var cachedValue = queryResultCache.get(query.text(),( queryText, _exec) -> runQueryInBackground(queryText));
+
+                    // What this essentially does is: if the query result is already in the cache, return it immediately.
+                    // If not, start executing the query in the background and return a "pending" status.
+                    // We dont use Duration.ZERO in case this is a very fast query. Having the client poll again
+                    // for something that was essentially done already would be punishing.
                     return Mono.fromFuture(cachedValue).timeout(Duration.ofMillis(300), Mono.just(QueryResult.pending()));
                 });
     }

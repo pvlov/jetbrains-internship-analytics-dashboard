@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
 
 @RestController
 @RequestMapping("query")
@@ -30,7 +29,7 @@ public class QueryController {
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Flux<Map<String, Object>> executeQuery(@PathVariable final long id) {
-        return this.queryService.executeQuery(id);
+    public Mono<QueryResult> executeQuery(@PathVariable final long id) {
+        return this.queryService.pollQuery(id);
     }
 }
