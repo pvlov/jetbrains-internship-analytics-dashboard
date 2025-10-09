@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-
 @RestController
 @RequestMapping("query")
 public class QueryController {
@@ -18,12 +17,16 @@ public class QueryController {
         this.queryService = queryService;
     }
 
-    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(
+            value = "",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
     public Mono<Long> saveQuery(@RequestBody final Query queryRequest) {
         return this.queryService.saveQuery(queryRequest.text());
     }
 
-    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
     public Flux<Query> getAllQueries() {
         return this.queryService.getAllQueries();
     }
