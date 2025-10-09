@@ -1,16 +1,16 @@
 plugins {
-    id 'java'
-    id 'org.springframework.boot' version '3.5.6'
-    id 'io.spring.dependency-management' version '1.1.7'
+    id "java"
+    alias(libs.plugins.spring.dependency.management)
+    alias(libs.plugins.spring.boot)
 }
 
-group = 'pvlov'
-version = '0.0.1-SNAPSHOT'
-description = 'analytics-dashboard'
+group = "pvlov"
+version = "0.1.0"
+description = "analytics-dashboard"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
@@ -25,21 +25,27 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
-    implementation("com.github.ben-manes.caffeine:caffeine:3.2.2")
 
-    compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'com.h2database:h2'
-    runtimeOnly 'io.r2dbc:r2dbc-h2'
-    annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'io.projectreactor:reactor-test'
-    testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation 'org.testcontainers:r2dbc'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // the usual spring magic
+    implementation(libs.spring.boot.starter.webflux)
+    implementation(libs.spring.boot.starter.data.r2dbc)
+    implementation(libs.spring.boot.starter.actuator)
+
+    // persistence
+    implementation(libs.caffeine)
+    runtimeOnly(libs.h2)
+    runtimeOnly(libs.r2dbc.h2)
+
+    // json utility
+    implementation(libs.jackson.databind)
+
+
+    // testing
+    implementation(libs.spring.boot.starter.test)
+    implementation(libs.reactor.test)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
-tasks.named('test') {
+tasks.named("test") {
     useJUnitPlatform()
 }
