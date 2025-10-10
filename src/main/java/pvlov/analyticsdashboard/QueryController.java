@@ -13,7 +13,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("query")
+@RequestMapping("queries")
 public class QueryController {
 
     private final QueryService queryService;
@@ -55,7 +55,7 @@ public class QueryController {
         return this.queryService.getAllQueries();
     }
 
-    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/poll/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<QueryResult> executeQuery(@PathVariable final long id) {
         return this.queryService.pollQuery(id);
     }

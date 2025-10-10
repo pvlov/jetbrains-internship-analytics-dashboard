@@ -12,6 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
 // is a pure AST check using JSQLParser.
 public class QueryValidationTest extends IntegrationTestMixin {
 
+    private static final String BASE_ENDPOINT = "/queries";
+
     @ParameterizedTest
     @ValueSource(strings = {
         "",
@@ -23,7 +25,7 @@ public class QueryValidationTest extends IntegrationTestMixin {
     void saveQuery__shouldReturnBadRequest__whenQueryIsEmpty(final String queryText) {
         getWebTestClient()
                 .post()
-                .uri("/query")
+                .uri(BASE_ENDPOINT)
                 .accept(MediaType.APPLICATION_JSON)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(new Query(queryText))
@@ -44,7 +46,7 @@ public class QueryValidationTest extends IntegrationTestMixin {
     void saveQuery__shouldReturnBadRequest__whenQueryIsMalformed(final String queryText) {
         getWebTestClient()
                 .post()
-                .uri("/query")
+                .uri(BASE_ENDPOINT)
                 .accept(MediaType.APPLICATION_JSON)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(new Query(queryText))
@@ -67,7 +69,7 @@ public class QueryValidationTest extends IntegrationTestMixin {
     void saveQuery__shouldReturnBadRequest__whenQueryAttemptsToWrite(final String queryText) {
         getWebTestClient()
                 .post()
-                .uri("/query")
+                .uri(BASE_ENDPOINT)
                 .accept(MediaType.APPLICATION_JSON)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(new Query(queryText))

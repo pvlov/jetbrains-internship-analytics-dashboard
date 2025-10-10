@@ -23,6 +23,8 @@ public class QueryTestClient {
 
     private final WebTestClient webClient;
 
+    private static final String BASE_ENDPOINT = "/queries";
+
     public QueryTestClient(final WebTestClient client) {
         final int size = 16 * 1024 * 1024; // 16 MB
 
@@ -37,7 +39,7 @@ public class QueryTestClient {
     public Long successFullySaveQuery(final String queryText) {
         final var id = webClient
                 .post()
-                .uri("/query")
+                .uri(BASE_ENDPOINT)
                 .accept(MediaType.APPLICATION_JSON)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(new Query(queryText))
@@ -57,7 +59,7 @@ public class QueryTestClient {
     public List<Query> successFullyGetAllQueries() {
         final var list = webClient
                 .get()
-                .uri("/query")
+                .uri(BASE_ENDPOINT)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus()
@@ -75,7 +77,7 @@ public class QueryTestClient {
     public QueryResult successFullyExecuteQuery(final long queryId) {
         final var result = webClient
                 .get()
-                .uri("/query/{id}", queryId)
+                .uri(BASE_ENDPOINT + "/poll/{id}", queryId)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus()

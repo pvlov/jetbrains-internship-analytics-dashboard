@@ -1,10 +1,11 @@
 package pvlov.analyticsdashboard;
 
-import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.r2dbc.core.DatabaseClient;
@@ -15,6 +16,8 @@ import reactor.core.scheduler.Schedulers;
 
 @Service
 public class QueryService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(QueryService.class);
 
     private final Cache<String, Mono<QueryResult>> queryResultCache;
     private final QueryRepository queryRepository;
@@ -44,7 +47,11 @@ public class QueryService {
     }
 
     public Mono<Long> saveQuery(final String queryText) {
-        return this.queryRepository.save(new Query(queryText)).map(Query::id);
+        return this.queryRepository
+                .save(new Query(queryText))
+                .map(Query::id)
+                .doOnSuccess(id -> LOGGER.debug("Successfully saved query: {} with id: {}", queryText, id))
+                .doOnError(error -> LOGGER.error("An error occured when saving query: {}", queryText, error));
     }
 
     public Flux<Query> getAllQueries() {
@@ -72,7 +79,9 @@ public class QueryService {
                             .map(ignored -> QueryResult.pending());
 
                     return Mono.firstWithSignal(resultMono, pendingMono);
-                });
+                })
+                .doOnSuccess(result -> LOGGER.debug("Successfully polled query with id: {}. Result: {}",  queryId, result))
+                .doOnError(error -> LOGGER.error("An error occured while polling for query with id: {}", queryId, error));
     }
 
     public Mono<QueryResult> runQueryInBackground(final String queryText) {
@@ -84,6 +93,10 @@ public class QueryService {
                 .map(QueryResult::success)
                 .timeout(maxQueryTimeout, Mono.just(QueryResult.failed("Query took too long!")))
                 .onErrorResume(err -> Mono.just(QueryResult.failed(err.getMessage())))
-                .doOnSuccess(result -> queryResultCache.put(queryText, Mono.just(result)));
+                .doOnSuccess(result -> {
+                    LOGGER.debug("Successfully executed {} in the background. Caching the result.", queryText);
+                    queryResultCache.put(queryText, Mono.just(result));
+                })
+                .doOnError(error -> LOGGER.error("An error occured while executing query: {} in the background", queryText, error));
     }
 }

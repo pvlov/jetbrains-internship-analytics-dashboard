@@ -12,6 +12,8 @@ import pvlov.analyticsdashboard.util.IntegrationTestMixin;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 class QueryExecutionTest extends IntegrationTestMixin {
@@ -31,6 +33,27 @@ class QueryExecutionTest extends IntegrationTestMixin {
     @Test
     void getAllQueries__shouldReturnOk() {
         getQueryTestClient().successFullyGetAllQueries();
+    }
+
+    @Test
+    void getAllQueries__shouldContainInsertedQueries_whenInsertingQueriesBeforeGetting() {
+        final Set<String> testQueries = Set.of(
+            "SELECT * FROM users",
+            "SELECT * FROM passenger",
+            "SELECT * FROM passenger where age > 30"
+        );
+
+        testQueries.forEach(getQueryTestClient()::successFullySaveQuery);
+
+        final var actualQueries = getQueryTestClient()
+                .successFullyGetAllQueries()
+                .stream()
+                .map(Query::text)
+                .collect(Collectors.toUnmodifiableSet());
+
+        for (final var query : testQueries) {
+            assertTrue(actualQueries.contains(query));
+        }
     }
 
     // First some tests to check the mechanisms of our API
