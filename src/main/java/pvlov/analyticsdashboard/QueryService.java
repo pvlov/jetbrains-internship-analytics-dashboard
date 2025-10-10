@@ -20,22 +20,27 @@ public class QueryService {
     private final QueryRepository queryRepository;
     private final DatabaseClient databaseClient;
 
-    private static final Duration QUERY_GRACE_DURATION = Duration.ofMillis(300);
+    private final Duration graceQueryTimeout;
+    private final Duration maxQueryTimeout;
 
     @Autowired
     public QueryService(
             @Value("${app.caching.maxSize}") final int maxCacheSize,
             @Value("${app.caching.ttl}") final Duration cacheEntryTtl,
+            @Value("${app.graceQueryTimeout}") final Duration graceQueryTimeout,
+            @Value("${app.maxQueryTimeout}") final Duration maxQueryTimout,
             final QueryRepository queryRepository,
             final DatabaseClient databaseClient
     ) {
+        this.queryRepository = queryRepository;
+        this.databaseClient = databaseClient;
+        this.graceQueryTimeout = graceQueryTimeout;
+        this.maxQueryTimeout = maxQueryTimout;
+
         this.queryResultCache = Caffeine.newBuilder()
                 .maximumSize(maxCacheSize)
                 .expireAfterWrite(cacheEntryTtl)
                 .build();
-
-        this.queryRepository = queryRepository;
-        this.databaseClient = databaseClient;
     }
 
     public Mono<Long> saveQuery(final String queryText) {
@@ -63,7 +68,7 @@ public class QueryService {
                                     .cache()
                     );
 
-                    Mono<QueryResult> pendingMono = Mono.delay(QUERY_GRACE_DURATION)
+                    Mono<QueryResult> pendingMono = Mono.delay(graceQueryTimeout)
                             .map(ignored -> QueryResult.pending());
 
                     return Mono.firstWithSignal(resultMono, pendingMono);
@@ -77,6 +82,7 @@ public class QueryService {
                 .all()
                 .collectList()
                 .map(QueryResult::success)
+                .timeout(maxQueryTimeout, Mono.just(QueryResult.failed("Query took too long!")))
                 .onErrorResume(err -> Mono.just(QueryResult.failed(err.getMessage())))
                 .doOnSuccess(result -> queryResultCache.put(queryText, Mono.just(result)));
     }

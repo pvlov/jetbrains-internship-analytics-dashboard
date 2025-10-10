@@ -9,6 +9,8 @@ spring:
     password:
 
 app:
+  graceQueryTimeout: 300ms
+  maxQueryTimeout: 20m
   caching:
     ttl: 120s
     maxSize: 1000
