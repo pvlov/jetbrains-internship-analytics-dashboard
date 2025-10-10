@@ -1,6 +1,7 @@
 package pvlov.analyticsdashboard;
 
 import com.github.benmanes.caffeine.cache.AsyncCache;
+import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -10,11 +11,12 @@ import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 public class QueryService {
 
-    private final AsyncCache<String, QueryResult> queryResultCache;
+    private final Cache<String, Mono<QueryResult>> queryResultCache;
     private final QueryRepository queryRepository;
     private final DatabaseClient databaseClient;
 
@@ -30,7 +32,7 @@ public class QueryService {
         this.queryResultCache = Caffeine.newBuilder()
                 .maximumSize(maxCacheSize)
                 .expireAfterWrite(cacheEntryTtl)
-                .buildAsync();
+                .build();
 
         this.queryRepository = queryRepository;
         this.databaseClient = databaseClient;
@@ -45,20 +47,30 @@ public class QueryService {
     }
 
     public Mono<QueryResult> pollQuery(final long queryId) {
-        return queryRepository.findById(queryId).flatMap(query -> {
-            final var cachedValue = queryResultCache.get(query.text(), (queryText, _exec) -> runQueryInBackground(queryText));
+        return queryRepository.findById(queryId)
+                .flatMap(query -> {
+                    // If the query result is already in the cache, return it immediately.
+                    // If not, start executing the query in the background and return a "pending"
+                    // status. We don't use Duration.ZERO in case this is a very fast query. Having the
+                    // client poll again for something that was essentially done already would be quite punishing.
+                    // So we give it a small grace period to see if the query finishes quickly.
+                    // To achieve this, we just let a delay mono and the mono computing the result race against
+                    // each other.
+                    Mono<QueryResult> resultMono = this.queryResultCache.asMap().computeIfAbsent(
+                            query.text(),
+                            key -> runQueryInBackground(key)
+                                    .subscribeOn(Schedulers.boundedElastic())
+                                    .cache()
+                    );
 
-            // If the query result is already in the cache, return it immediately.
-            // If not, start executing the query in the background and return a "pending"
-            // status. We don't use Duration.ZERO in case this is a very fast query. Having the
-            // client poll again for something that was essentially done already would be quite punishing.
-            // So we give it a small grace period to see if the query finishes quickly.
-            return Mono.fromFuture(cachedValue).timeout(QUERY_GRACE_DURATION, Mono.just(QueryResult.pending()));
-        });
+                    Mono<QueryResult> pendingMono = Mono.delay(QUERY_GRACE_DURATION)
+                            .map(ignored -> QueryResult.pending());
+
+                    return Mono.firstWithSignal(resultMono, pendingMono);
+                });
     }
 
-    public CompletableFuture<QueryResult> runQueryInBackground(final String queryText) {
-        // Execute the query and update the cache with the result
+    public Mono<QueryResult> runQueryInBackground(final String queryText) {
         return databaseClient
                 .sql(queryText)
                 .fetch()
@@ -66,6 +78,6 @@ public class QueryService {
                 .collectList()
                 .map(QueryResult::success)
                 .onErrorResume(err -> Mono.just(QueryResult.failed(err.getMessage())))
-                .toFuture();
+                .doOnSuccess(result -> queryResultCache.put(queryText, Mono.just(result)));
     }
 }

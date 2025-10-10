@@ -35,9 +35,12 @@ dependencies {
     runtimeOnly(libs.h2)
     runtimeOnly(libs.r2dbc.h2)
 
-    // json utility
+    // json/parsing utility
     implementation(libs.jackson.databind)
+    implementation(libs.jsqlparser)
 
+    // fp style programming
+    implementation(libs.vavr)
 
     // testing
     implementation(libs.spring.boot.starter.test)
