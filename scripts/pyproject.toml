@@ -1,0 +1,9 @@
+[project]
+name = "scripts"
+version = "0.1.0"
+description = "Supporting scripts for the application"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "faker>=37.11.0",
+]
