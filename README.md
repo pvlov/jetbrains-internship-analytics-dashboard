@@ -81,7 +81,6 @@ Here is the basic rundown of each test:
 - The `scripts` folder contains a Python script (`fake-titanic.py`) that uses the `Faker` library to generate a large volume of realistic-looking fake data for the Titanic dataset. The application by default will load 100_000 additional rows to allow for more interesting queries.
 - The application also uses the more modern version catalogues for easier dependency management.
 
-
 ---
 
 ## Limitations/Problems with the design and how to tackle them
@@ -96,7 +95,7 @@ Here is the basic rundown of each test:
   * It is not possible to cancel running queries. You could simply kill the running job for a provided ID.
 
 - **Multi-Node Deployment/In-Memory persistence**:
-  * The current implementation is not suitable for multi-node deployments as queries would run n-times or worse. It would also cost n-times the amount of memory, if the requests are distributed perfectly even. You can solve this by using Redis/Valkey/Any KV-Store instead of an in-memory cache to make sure it stays synchronized and doesn't overuse memory. It would provide a shared cache for all pods, improving performance and consistency. Redis could also be used as a message broker for a more advanced solution for long-running queries, where the server pushes a notification to the client when the query is complete, instead of relying on polling. You should also deploy and use and actual DBMS like Postgres instead of H2.
+  * The current implementation is not suitable for multi-node deployments as queries would run n-times or worse. It would also cost n-times the amount of memory, if the requests are distributed perfectly even. You can solve this by using Redis/Valkey/Any KV-Store instead of an in-memory cache to make sure it stays synchronized and doesn't overuse memory. It would provide a shared cache for all pods, improving performance and consistency. Redis could also be used as a message broker for a more advanced solution for long-running queries, where the server pushes a notification to background-workers to offload the computation. You should also deploy and use and actual DBMS like Postgres instead of H2.
 
 - **Missing Authentication and Authorization**:
   * The API is currently unauthenticated. In a production system, you would want to add authentication and authorization to control who can access the API. This can be as simple as putting keycloak or any other identity service in front of the application or as complicated as managing different DBMS account per log-in to make sure that you can restrict users to certain database schemas.
@@ -106,4 +105,7 @@ Here is the basic rundown of each test:
 
 - **CI/CD**:
   * There is no continuous integration apart from tests and no deployment of course.
+
+- **Server-sent Events instead of polling**
+  * One could leverage SSE or web sockets instead of forcing the client to poll the result constantly.
 
